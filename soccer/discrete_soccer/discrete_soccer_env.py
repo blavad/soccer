@@ -72,7 +72,7 @@ class DiscreteSoccerEnv(gym.Env):
         # Autres parametres d etats
         assert obs_type in DiscreteSoccerEnv.obs_types
         self.obs_type = obs_type
-        self.end_game = False
+        self.done_flag = False
 
         self.action_space = spaces.Discrete(len(DiscreteSoccerEnv.actions))
         if obs_type is 'integer':
@@ -143,6 +143,10 @@ class DiscreteSoccerEnv(gym.Env):
 
     def step(self, actions):
         action = []
+        try :
+            actions = list(actions)
+        except TypeError :
+            actions = [actions]          
         for act in actions:
             assert self.action_space.contains(act), "%r (%s) invalid" % (act, type(act))
             action += [DiscreteSoccerEnv.actions[act]]
@@ -171,25 +175,25 @@ class DiscreteSoccerEnv(gym.Env):
     def reward(self, action):
         rew_team1 = 0
         rew_team2 = 0
-        done = False
         for pl, act in list(zip(self.all_players, action)):
             but = self.buuut(pl, act)
             if but != [0,0]:
-                done = True
-            if not self.end_game :
-                self.end_game = True
+                self.done_flag = True
                 DiscreteSoccerEnv.score += but
             rew_team1 = rew_team1 + but[0] - but[1]
             rew_team2 = rew_team2 + but[1] - but[0]
         rew = [rew_team1]*len(self.team1) + [rew_team2]*len(self.team2)
-        return rew, [done]*self.n_players
+        done = [self.done_flag]*self.n_players
+        return rew, done
             
     def buuut(self, pl, action):
         if action=='front':
-            if isinstance(pl.team, Team1) and pl.pos[1]+1 >= self.w_field and pl.pos[0] >= self.goal_pos[0] and pl.pos[0] < self.goal_pos[1]: 
+            if isinstance(pl.team, Team1) and pl.has_ball and pl.pos[1]+1 >= self.w_field and pl.pos[0] >= self.goal_pos[0] and pl.pos[0] < self.goal_pos[1]: 
+                pl.has_ball = False
                 return [1,0]
             
-            if isinstance(pl.team, Team2) and pl.pos[1] < 1 and pl.pos[0] >= self.goal_pos[0] and pl.pos[0] < self.goal_pos[1]:
+            if isinstance(pl.team, Team2) and pl.has_ball and pl.pos[1] < 1 and pl.pos[0] >= self.goal_pos[0] and pl.pos[0] < self.goal_pos[1]:
+                pl.has_ball = False
                 return [0,1]
         return [0,0]
 
@@ -321,8 +325,8 @@ class DiscreteSoccerEnv(gym.Env):
     def displayInfos(self, img,  score):
         font = cv2.FONT_HERSHEY_SIMPLEX
         color = (0,0,0)
-        cv2.putText(img, "T1 {}".format(DiscreteSoccerEnv.score[0]), (1*self.width//6, self.height//8), font, 0.6, color, 1, cv2.LINE_AA)
-        cv2.putText(img, "T2 {}".format(DiscreteSoccerEnv.score[1]), (4*self.width//6, self.height//8), font, 0.6, color, 1, cv2.LINE_AA)
+        cv2.putText(img, "Blue {} - {} Red".format(DiscreteSoccerEnv.score[0],DiscreteSoccerEnv.score[1]), (2*self.width//7, self.height//10), font, 1., color, 1, cv2.LINE_AA)
+        # cv2.putText(img, "{}".format(DiscreteSoccerEnv.score[1]), (4*self.width//7, self.height//10), font, 1., color, 1, cv2.LINE_AA)
         return img
 
     def draw_goal(self, img):
