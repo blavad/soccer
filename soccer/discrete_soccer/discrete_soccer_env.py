@@ -135,6 +135,10 @@ class DiscreteSoccerEnv(gym.Env):
         coef = (self.w_field*self.h_field)**np.arange(self.n_players)
         pos_pl = np.array([self.pl_state(i) for i in range(self.n_players)])
         tmp_state = sum(coef*pos_pl)
+        for i, pl in enumerate(self.all_players):
+            if pl.has_ball:
+                tmp_state += i * coef
+                break
         return tmp_state
         
     def reset(self):
