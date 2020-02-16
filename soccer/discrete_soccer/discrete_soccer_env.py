@@ -137,7 +137,7 @@ class DiscreteSoccerEnv(gym.Env):
         tmp_state = sum(coef*pos_pl)
         for i, pl in enumerate(self.all_players):
             if pl.has_ball:
-                tmp_state += i * coef
+                tmp_state += i * (self.w_field*self.h_field)**(self.n_players)
                 break
         return tmp_state
         
