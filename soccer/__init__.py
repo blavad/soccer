@@ -1,1 +1,1 @@
-from discrete_soccer.discrete_soccer_env import DiscreteSoccerEnv
+from soccer.discrete_soccer import DiscreteSoccerEnv

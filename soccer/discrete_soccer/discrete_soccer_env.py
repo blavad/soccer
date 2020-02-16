@@ -1,7 +1,7 @@
 """
 Discret soccer game.
 """
-
+import soccer
 import math
 import os
 import gym
@@ -10,22 +10,24 @@ from gym.utils import seeding
 import numpy as np
 
 import cv2
-import discrete_soccer as core
 from .core import Team1, Team2
 
 class DiscreteSoccerEnv(gym.Env):
     """
     Description:
-        A bird is flying
+        Soccer game.
     Observation:
         Type: Discrete(Width x Height x NbAgent)
         Num	Observation                                 
         
     Actions:
-        Type: Discrete(6)
+        Type: Discrete(5)
         Num	Action
         0	Do nothing
-        1	Fly
+        1	Front
+        2	Back
+        3	Left
+        4	Right
 
     """
 
@@ -39,8 +41,7 @@ class DiscreteSoccerEnv(gym.Env):
         'front',
         'back',
         'left',
-        'right',
-        'shoot'
+        'right'
     ]
     
     obs_types = ['integer',
@@ -50,20 +51,20 @@ class DiscreteSoccerEnv(gym.Env):
 
     l_bound = 100
 
-    def __init__(self, width_field=5, height_field=4, nb_pl_team1=1, nb_pl_team2=1, obs_type='integer'):
+    def __init__(self, width_field=5, height_field=4, height_goal=None, nb_pl_team1=1, nb_pl_team2=1, obs_type='integer'):
 
-
+        DiscreteSoccerEnv.score = np.array([0,0])
+        
         # Field parameters
         self.w_field = width_field
         self.h_field = height_field
-        self.h_goal = self.h_field//2
+        self.h_goal = self.h_field//2 if height_goal is None else height_goal
         self.goal_pos = (self.h_field//2 - self.h_goal//2, self.h_field//2 + (self.h_goal-self.h_goal//2))
         self.field = np.zeros((self.h_field, self.w_field))
         
         # Dimensions
         self.width = width_field*DiscreteSoccerEnv.l_bound
         self.height = height_field*DiscreteSoccerEnv.l_bound
-        self.score_max = 10
         
         # Players parameters
         self.team = [Team1(nb_pl_team1).init_config(self.w_field, self.h_field), Team2(nb_pl_team2).init_config(self.w_field, self.h_field)]
@@ -78,7 +79,8 @@ class DiscreteSoccerEnv(gym.Env):
         if obs_type is 'integer':
             self.observation_space = spaces.Discrete(self.state_space)
         else :
-            self.observation_space = spaces.Box()
+            self.observation_space = spaces.Box(low=0, high=1, shape=(3, self.h_field, self.w_field),
+            dtype=np.uint8)
             
         self.init_assets()
             
@@ -87,10 +89,10 @@ class DiscreteSoccerEnv(gym.Env):
     def init_assets(self):
         c = DiscreteSoccerEnv.l_bound
 
-        u_j1 = os.path.join(os.path.dirname(core.__file__),'assets/j1.png')
-        u_j1b = os.path.join(os.path.dirname(core.__file__),'assets/j1_ball.png')
-        u_j2 = os.path.join(os.path.dirname(core.__file__),'assets/j2.png')
-        u_j2b = os.path.join(os.path.dirname(core.__file__),'assets/j2_ball.png')
+        u_j1 = os.path.join(os.path.dirname(soccer.__file__),'discrete_soccer/assets/j1.png')
+        u_j1b = os.path.join(os.path.dirname(soccer.__file__),'discrete_soccer/assets/j1_ball.png')
+        u_j2 = os.path.join(os.path.dirname(soccer.__file__),'discrete_soccer/assets/j2.png')
+        u_j2b = os.path.join(os.path.dirname(soccer.__file__),'discrete_soccer/assets/j2_ball.png')
 
         self.j1 = cv2.cvtColor(cv2.resize(cv2.imread(u_j1), (c,c)), cv2.COLOR_BGR2RGB)
         self.j1_ball = cv2.cvtColor(cv2.resize(cv2.imread(u_j1b), (c,c)), cv2.COLOR_BGR2RGB)
@@ -102,7 +104,7 @@ class DiscreteSoccerEnv(gym.Env):
         if self.obs_type is 'integer':
             return self.calculate_int_state()
         else:
-            return self.field
+            return self.map_state()
         
     @property
     def team1(self):
@@ -126,7 +128,7 @@ class DiscreteSoccerEnv(gym.Env):
         
     def pl_state(self, i):
         pl_pos = self.all_players[i].pos
-        return pl_pos[0] + self.w_field * pl_pos[1]
+        return pl_pos[0] + self.h_field * pl_pos[1]
     
     def calculate_int_state(self):
         coef = (self.w_field*self.h_field)**np.arange(self.n_players)
@@ -137,9 +139,9 @@ class DiscreteSoccerEnv(gym.Env):
     def reset(self):
         self.team[0] = self.team[0].init_config(self.w_field, self.h_field)
         self.team[1] = self.team[1].init_config(self.w_field, self.h_field)
-        self.end_game = False
+        self.done_flag = False
         self.update_field()
-        return self.state
+        return [self.state]*self.n_players
 
     def step(self, actions):
         action = []
@@ -150,12 +152,14 @@ class DiscreteSoccerEnv(gym.Env):
         for act in actions:
             assert self.action_space.contains(act), "%r (%s) invalid" % (act, type(act))
             action += [DiscreteSoccerEnv.actions[act]]
+        if len(action) < self.n_players:
+            action += 'none'*(self.n_players- len(action))
         rew, done = self.reward(action)
         
         self.update_state(action)
         
         self.update_field()
-            
+        
         return [self.state]*self.n_players, rew, done, {}
 
     def new_pos(self, player, action):
@@ -180,8 +184,10 @@ class DiscreteSoccerEnv(gym.Env):
             if but != [0,0]:
                 self.done_flag = True
                 DiscreteSoccerEnv.score += but
-            rew_team1 = rew_team1 + but[0] - but[1]
-            rew_team2 = rew_team2 + but[1] - but[0]
+            rew_team1 = rew_team1 + (but[0] - but[1])*1
+            rew_team2 = rew_team2 + (but[1] - but[0])*1
+        # rew_team1 += int(self.team1.has_ball) - int(self.team2.has_ball)
+        # rew_team2 += int(self.team2.has_ball) - int(self.team1.has_ball)
         rew = [rew_team1]*len(self.team1) + [rew_team2]*len(self.team2)
         done = [self.done_flag]*self.n_players
         return rew, done
@@ -204,7 +210,7 @@ class DiscreteSoccerEnv(gym.Env):
 
     def update_state(self, actions):
         for i, (pl, act) in enumerate(list(zip(self.all_players, actions))):
-            print(pl.pos, ' - ', act)
+            # print(pl.pos, ' - ', act)
             pl.pos = self.new_pos(pl, act)
             if pl.pos == pl.old_pos:
                 actions[i] = 'none'
@@ -254,11 +260,11 @@ class DiscreteSoccerEnv(gym.Env):
                         if i != pl_stay:
                             p[0].pos = p[0].old_pos
                             if p[0].has_ball:
-                                keep_ball = np.random.random()<0.5
+                                keep_ball = np.random.random()<0.7
                                 p[0].has_ball = keep_ball
                                 conf_pl[pl_stay][0].has_ball = not keep_ball
                             elif conf_pl[pl_stay][0].has_ball:
-                                keep_ball = np.random.random()<0.5
+                                keep_ball = np.random.random()<0.3
                                 conf_pl[pl_stay][0].has_ball = keep_ball
                                 p[0].has_ball = not keep_ball
                                 
@@ -350,3 +356,16 @@ class DiscreteSoccerEnv(gym.Env):
             
         img[y_offset:y_offset+player_img.shape[0], x_offset:x_offset+player_img.shape[1]] = player_img
         return img
+    
+    def map_state(self):
+        tmp_state = np.zeros((3, self.h_field, self.w_field))
+        for pl in self.team1.player:
+            tmp_state[1, pl.pos[0],pl.pos[1]] = 1
+            if pl.has_ball:
+                tmp_state[0,pl.pos[0],pl.pos[1]] = 1
+        for pl in self.team2.player:
+            tmp_state[2, pl.pos[0],pl.pos[1]] = 1
+            if pl.has_ball:
+                tmp_state[0, pl.pos[0],pl.pos[1]] = 1
+                
+        return tmp_state

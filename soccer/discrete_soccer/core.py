@@ -7,6 +7,7 @@ class Team(object):
     def __len__(self):
         return len(self.player)
     
+    @property
     def has_ball(self):
         for pl in self.player:
             if pl.has_ball:
@@ -20,6 +21,7 @@ class Team1(Team):
         
     def init_config(self, w, h):
         for i, pl in enumerate(self.player):
+            pl.has_ball = False
             if i==0:
                 pl.pos = (h//2,0)
                 pl.has_ball = True
@@ -36,6 +38,7 @@ class Team2(Team):
         
     def init_config(self, w, h):
         for i, pl in enumerate(self.player):
+            pl.has_ball = False
             if i==0:
                 pl.pos = (h//2,w-1)
             if i==1:
