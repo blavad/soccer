@@ -68,6 +68,7 @@ class DiscreteSoccerEnv(gym.Env):
         
         # Players parameters
         self.team = [Team1(nb_pl_team1).init_config(self.w_field, self.h_field), Team2(nb_pl_team2).init_config(self.w_field, self.h_field)]
+        self.all_players[np.random.randint(self.n_players)].has_ball=True
         self.update_field()
 
         # Autres parametres d etats
@@ -139,6 +140,7 @@ class DiscreteSoccerEnv(gym.Env):
     def reset(self):
         self.team[0] = self.team[0].init_config(self.w_field, self.h_field)
         self.team[1] = self.team[1].init_config(self.w_field, self.h_field)
+        self.all_players[np.random.randint(self.n_players)].has_ball=True
         self.done_flag = False
         self.update_field()
         return [self.state]*self.n_players
@@ -312,7 +314,7 @@ class DiscreteSoccerEnv(gym.Env):
         return img
         
     def renderInfos(self, score=None, color_background=[50,200,200]):
-        height = self.height//6
+        height = self.width//6
         infosImg = np.full(
             (height, self.width, 3),
             255,
@@ -331,7 +333,7 @@ class DiscreteSoccerEnv(gym.Env):
     def displayInfos(self, img,  score):
         font = cv2.FONT_HERSHEY_SIMPLEX
         color = (0,0,0)
-        cv2.putText(img, "Blue {} - {} Red".format(DiscreteSoccerEnv.score[0],DiscreteSoccerEnv.score[1]), (2*self.width//7, self.height//10), font, 1., color, 1, cv2.LINE_AA)
+        cv2.putText(img, "Blue {} - {} Red".format(DiscreteSoccerEnv.score[0],DiscreteSoccerEnv.score[1]), (2*self.width//7, self.width//10), font, min(1., 0.2*self.w_field), color, 1, cv2.LINE_AA)
         # cv2.putText(img, "{}".format(DiscreteSoccerEnv.score[1]), (4*self.width//7, self.height//10), font, 1., color, 1, cv2.LINE_AA)
         return img
 

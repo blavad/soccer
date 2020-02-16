@@ -24,7 +24,6 @@ class Team1(Team):
             pl.has_ball = False
             if i==0:
                 pl.pos = (h//2,0)
-                pl.has_ball = True
             if i==1:
                 pl.pos = (0,0)
             if i==2:
