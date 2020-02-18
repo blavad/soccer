@@ -99,7 +99,15 @@ class ContinuousSoccerEnv(BaseSoccerEnv):
     def diff_pos(self, pos_ref, pos_comp):
         diff = np.array(list(pos_comp)) - np.array(list(pos_ref))
         return tuple(diff)
-        
+    
+    def reset(self):
+        self.team[0] = self.team[0].init_config(self.w_field, self.h_field, size_pl=self.size_player, type_config=self.type_config)
+        self.team[1] = self.team[1].init_config(self.w_field, self.h_field, size_pl=self.size_player, type_config=self.type_config)
+        self.done_flag = False
+
+        self.ball_pos = [np.random.randint(self.size_ball, self.height-self.size_ball), self.width//2-self.size_ball//2]
+        self.velocity_ball = [0,0]
+        return self.state    
         
     @property
     def state(self):

@@ -58,16 +58,6 @@ class BaseSoccerEnv(gym.Env):
     def all_players(self):
         return self.team1.player + self.team2.player
  
- 
-    def reset(self):
-        self.team[0] = self.team[0].init_config(self.w_field, self.h_field, size_pl=self.size_player, type_config=self.type_config)
-        self.team[1] = self.team[1].init_config(self.w_field, self.h_field, size_pl=self.size_player, type_config=self.type_config)
-        self.all_players[np.random.randint(self.n_players)].has_ball=True
-        self.done_flag = False
-        self.update_field()
-        # self.viewer = None
-        
-        return self.state
 
     def step(self, actions):
         action = []
