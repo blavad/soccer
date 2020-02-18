@@ -10,15 +10,14 @@ from gym.utils import seeding
 import numpy as np
 
 import cv2
-from .core import Team1, Team2
+from soccer.core import Team1, Team2
 
 class DiscreteSoccerEnv(gym.Env):
     """
     Description:
         Soccer game.
     Observation:
-        Type: Discrete(Width x Height x NbAgent)
-        Num	Observation                                 
+        Type: Discrete(NbAgent*(Width x Height)**NbAgent)
         
     Actions:
         Type: Discrete(5)
@@ -120,12 +119,12 @@ class DiscreteSoccerEnv(gym.Env):
         return len(self.team1) + len(self.team2)
     
     @property
-    def state_space(self):
-        return (self.n_players)*(self.w_field*self.h_field)**(self.n_players)
-    
-    @property
     def all_players(self):
         return self.team1.player + self.team2.player
+
+    @property
+    def state_space(self):
+        return (self.n_players)*(self.w_field*self.h_field)**(self.n_players)
         
     def pl_state(self, i):
         pl_pos = self.all_players[i].pos
@@ -213,6 +212,7 @@ class DiscreteSoccerEnv(gym.Env):
         self.field = np.zeros((self.h_field, self.w_field))
         for i, pl in enumerate(self.all_players):
             self.field[pl.pos] = 10*(i+1) if pl.has_ball else i+1
+        return self.field
 
     def update_state(self, actions):
         for i, (pl, act) in enumerate(list(zip(self.all_players, actions))):
@@ -251,13 +251,6 @@ class DiscreteSoccerEnv(gym.Env):
                                 p[0].has_ball = False
                                 conf_pl[num_pl][0].has_ball = True
                                 
-                                
-                            # if p[0].pos in conflit.keys():
-                            #     conflit[pl.pos] += [[pl,'none']]  
-                            # else:
-                            #     conflit[pl.pos] = [[pl,'none']] 
-                            # conf_pl.remove(p)
-        
         for conf_pos, conf_pl in conflit.items():
             if len(conf_pl) >1:
                 if 'none' in list(zip(*conf_pl))[1]:
@@ -274,14 +267,6 @@ class DiscreteSoccerEnv(gym.Env):
                                 conf_pl[pl_stay][0].has_ball = keep_ball
                                 p[0].has_ball = not keep_ball
                                 
-                                
-                            # if p[0].pos in conflit.keys():
-                            #     conflit[p[0].pos] += [[p,'none']]  
-                            # else:
-                            #     conflit[p[0].pos] = [[p,'none']] 
-                            # conf_pl.remove(p)        
-        
-        
     ########## RENDER PART ##############
     
     def render(self, mode='human'):
@@ -338,7 +323,6 @@ class DiscreteSoccerEnv(gym.Env):
         font = cv2.FONT_HERSHEY_SIMPLEX
         color = (0,0,0)
         cv2.putText(img, "Blue {} - {} Red".format(DiscreteSoccerEnv.score[0],DiscreteSoccerEnv.score[1]), (2*self.width//7, self.width//10), font, min(1., 0.2*self.w_field), color, 1, cv2.LINE_AA)
-        # cv2.putText(img, "{}".format(DiscreteSoccerEnv.score[1]), (4*self.width//7, self.height//10), font, 1., color, 1, cv2.LINE_AA)
         return img
 
     def draw_goal(self, img):
