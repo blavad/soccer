@@ -85,6 +85,7 @@ class ContinuousSoccerEnv(BaseSoccerEnv):
         self.speed_pl = 8
         self.ep_goal = max(4, self.width//50)
 
+        self.frein = 0.2
         self.velocity_ball = [0,0]
 
         self.action_space = spaces.Discrete(len(ContinuousSoccerEnv.actions))
@@ -164,8 +165,10 @@ class ContinuousSoccerEnv(BaseSoccerEnv):
         if but != [0,0]:
             self.done_flag = True
             self.score += but
-        rew_team1 = rew_team1 + (but[0] - but[1]) 
-        rew_team2 = rew_team2 + (but[1] - but[0])
+        rew_team1 = rew_team1 + (but[0] - but[1]) *1
+        rew_team2 = rew_team2 + (but[1] - but[0]) *1
+        rew_team1 -= (self.width - self.ball_pos[1])/self.width
+        rew_team2 -= (self.ball_pos[1])/self.width
         rew = [rew_team1]*len(self.team1) + [rew_team2]*len(self.team2)
         done = [self.done_flag]*self.n_players
         return rew, done
@@ -253,19 +256,19 @@ class ContinuousSoccerEnv(BaseSoccerEnv):
         vel = [0,0]
         # p1 vers la droite
         if pl.pos[1] - pl.old_pos[1] > 0:
-            vel = [0, self.speed_pl]    
+            vel = [0, self.speed_pl*2]    
             
         # p1 vers la gauche
         if pl.pos[1] - pl.old_pos[1] < 0:
-            vel = [0,-self.speed_pl]    
+            vel = [0,-self.speed_pl*2]    
             
         # p1 vers la bas
         if pl.pos[0] - pl.old_pos[0] > 0:
-            vel = [self.speed_pl,0]    
+            vel = [self.speed_pl*2,0]    
             
         # p1 vers la droite
         if pl.pos[0] - pl.old_pos[0] < 0:
-            vel = [ -self.speed_pl,0]    
+            vel = [ -self.speed_pl*2,0]    
         self.velocity_ball[0] += vel[0]
         self.velocity_ball[1] += vel[1]
     
@@ -284,8 +287,8 @@ class ContinuousSoccerEnv(BaseSoccerEnv):
                     if self.collision_pl(pl1,pl2):
                         self.gere_conflits(pl1,pl2)
 
-        self.velocity_ball[0] //= 2
-        self.velocity_ball[1] //= 2
+        self.velocity_ball[0] = int(self.frein * self.velocity_ball[0])
+        self.velocity_ball[1] = int(self.frein * self.velocity_ball[1])
 
         for pl in self.all_players:
             if self.collision_ball(pl):
@@ -295,7 +298,14 @@ class ContinuousSoccerEnv(BaseSoccerEnv):
         
                     
         self.ball_pos[0] += self.velocity_ball[0] if self.is_valide_pos(self.ball_pos[0]+self.velocity_ball[0], self.ball_pos[1],self.size_ball, self.size_ball) else 0
-        self.ball_pos[1] += self.velocity_ball[1] if self.is_valide_pos(self.ball_pos[0], self.ball_pos[1]+self.velocity_ball[1],self.size_ball, self.size_ball) else 0
+        
+        if self.is_valide_pos(self.ball_pos[0], self.ball_pos[1]+self.velocity_ball[1],self.size_ball, self.size_ball):
+            self.ball_pos[1] += self.velocity_ball[1]
+        else :
+            if self.ball_pos[1]+self.velocity_ball[1] < 0 :
+                self.ball_pos[1] = self.ep_goal//2
+            else:
+                self.ball_pos[1] = self.width - self.size_ball - self.ep_goal//2
         
         for p in self.all_players:
             if self.is_valide_pos(p.pos[0], p.pos[1], self.size_player_w, self.size_player):

@@ -26,11 +26,12 @@ class BaseSoccerEnv(gym.Env):
         self.h_field = height
         self.h_goal = self.h_field//2 if height_goal is None else height_goal
         self.goal_pos = (self.h_field//2 - self.h_goal//2, self.h_field//2 + (self.h_goal-self.h_goal//2))
+        self.type_config = type_config
         
         # Players parameters
         self.size_player = min(width//4, height//4)
         self.size_player_w = int(self.size_player*0.36)
-        self.team = [Team1(nb_pl_team1).init_config(self.w_field, self.h_field, size_pl=self.size_player, type_config=type_config), Team2(nb_pl_team2).init_config(self.w_field, self.h_field, size_pl=self.size_player, type_config=type_config)]
+        self.team = [Team1(nb_pl_team1).init_config(self.w_field, self.h_field, size_pl=self.size_player, type_config=self.type_config), Team2(nb_pl_team2).init_config(self.w_field, self.h_field, size_pl=self.size_player, type_config=self.type_config)]
         self.all_players[np.random.randint(self.n_players)].has_ball=True
         self.update_field()
         self.size_ball =  self.size_player//3
@@ -59,8 +60,8 @@ class BaseSoccerEnv(gym.Env):
  
  
     def reset(self):
-        self.team[0] = self.team[0].init_config(self.w_field, self.h_field)
-        self.team[1] = self.team[1].init_config(self.w_field, self.h_field)
+        self.team[0] = self.team[0].init_config(self.w_field, self.h_field, size_pl=self.size_player, type_config=self.type_config)
+        self.team[1] = self.team[1].init_config(self.w_field, self.h_field, size_pl=self.size_player, type_config=self.type_config)
         self.all_players[np.random.randint(self.n_players)].has_ball=True
         self.done_flag = False
         self.update_field()
