@@ -11,3 +11,9 @@ Gym environments for playing soccer with multi-agents.
 Same environment with 3 players in both team.
 
 ![alt text](https://github.com/blavad/soccer/blob/master/img/soccer3x3_small.png)
+
+
+### 3. ContinuousSoccerEnv (3 vs 3)
+Same environment but continuous with 3 players in both team.
+
+![alt text](https://github.com/blavad/soccer/blob/master/img/soccer3x3_continuous.png)

@@ -15,26 +15,12 @@ from soccer import BaseSoccerEnv
 from soccer.core import Team1, Team2
 
 
-def are_valide_coord(arr, x, y):
-    return (x > 0 and x < arr.shape[1] and y > 0 and y < arr.shape[0])
-
-
-def putImg(back, img, x, y, w, h=None, rate = 1.0):
-    if h is None :
-        h = w
-    img2 = cv2.resize(img, (w,h))
-    for idx, nx in enumerate(range(x, x+w)):
-        for idy, ny in enumerate(range(y, y + h)):
-            if img2[idy, idx, 3] > 250 and are_valide_coord(back, nx, ny):
-                back[ny, nx, :] = rate*img2[idy, idx, :] + (1-rate)*back[ny, nx, :]
-    return back
-
 class ContinuousSoccerEnv(BaseSoccerEnv):
     """
     Description:
-        Soccer game.
+        Continuous soccer game.
     Observation:
-        Type: Discrete(Width x Height x NbAgent)
+        Type: Box((5+2*nb_player,))
         Num	Observation                                 
         
     Actions:
@@ -45,7 +31,6 @@ class ContinuousSoccerEnv(BaseSoccerEnv):
         2	Back
         3	Left
         4	Right
-
     """
 
     metadata = {
@@ -68,7 +53,7 @@ class ContinuousSoccerEnv(BaseSoccerEnv):
                  'image']
 
 
-    def __init__(self, width_field=300, height_field=200, height_goal=None, nb_pl_team1=1, nb_pl_team2=1, act_type='discrete', obs_type='positions'):
+    def __init__(self, width_field=500, height_field=300, height_goal=None, nb_pl_team1=1, nb_pl_team2=1, act_type='discrete', obs_type='positions'):
         BaseSoccerEnv.__init__(self, width=width_field, height=height_field,height_goal=height_goal,nb_pl_team1=nb_pl_team1,nb_pl_team2=nb_pl_team2, type_config="continuous")
         
         
