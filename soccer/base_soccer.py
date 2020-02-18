@@ -29,7 +29,7 @@ class BaseSoccerEnv(gym.Env):
         self.type_config = type_config
         
         # Players parameters
-        self.size_player = min(width//4, height//4)
+        self.size_player = min(width//5, height//5)
         self.size_player_w = int(self.size_player*0.36)
         self.team = [Team1(nb_pl_team1).init_config(self.w_field, self.h_field, size_pl=self.size_player, type_config=self.type_config), Team2(nb_pl_team2).init_config(self.w_field, self.h_field, size_pl=self.size_player, type_config=self.type_config)]
         self.all_players[np.random.randint(self.n_players)].has_ball=True
