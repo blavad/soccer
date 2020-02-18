@@ -1,1 +1,3 @@
+from soccer.base_soccer import BaseSoccerEnv
 from soccer.discrete_soccer import DiscreteSoccerEnv
+from soccer.continuous_soccer import ContinuousSoccerEnv
